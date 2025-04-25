@@ -5,10 +5,18 @@ pipeline {
         git 'Git'  // Use the default Git installation configured in Jenkins
     }
 
+    environment {
+        // Ensure Git is correctly found in the system's PATH
+        GIT_PATH = "C:\\Program Files\\Git\\cmd\\git.exe"  // Adjust path to your Git installation
+    }
+
     stages {
         stage('Checkout SCM') {
             steps {
                 script {
+                    // Check if Git is available in the environment
+                    echo "Git Path: ${env.GIT_PATH}"
+                    sh '"${GIT_PATH}" --version'  // Check Git version to confirm the correct Git tool is being used
                     // Checkout code from the Git repository
                     checkout scm
                 }
