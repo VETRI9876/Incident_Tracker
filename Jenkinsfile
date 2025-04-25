@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        git 'Default'  // Use the default Git installation configured in Jenkins
+        git 'git'  // Use the default Git installation configured in Jenkins
     }
 
     stages {
