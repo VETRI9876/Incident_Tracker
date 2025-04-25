@@ -43,9 +43,9 @@ pipeline {
                         withCredentials([string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
                                           string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID')]) {
                             // Initialize Terraform
-                            sh 'terraform init'
+                            sh '"${TF_PATH}" init'
                             // Plan Terraform changes
-                            sh 'terraform plan'
+                            sh '"${TF_PATH}" plan'
                         }
                     }
                 }
@@ -61,7 +61,7 @@ pipeline {
                         withCredentials([string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
                                           string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID')]) {
                             // Apply the plan with auto-approval
-                            sh 'terraform apply -auto-approve'
+                            sh '"${TF_PATH}" apply -auto-approve'
                         }
                     }
                 }
