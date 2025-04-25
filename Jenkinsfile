@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     environment {
         AWS_DEFAULT_REGION = "eu-north-1"
     }
@@ -18,11 +19,13 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     withEnv([
-                        "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
+                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"
                     ]) {
-                        sh 'terraform init'
-                        sh 'terraform plan -out=tfplan'
+                        bat '''
+                            terraform init
+                            terraform plan -out=tfplan
+                        '''
                     }
                 }
             }
@@ -30,15 +33,16 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
+                input message: '✅ Approve Terraform Apply?'
                 withCredentials([ 
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     withEnv([
-                        "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
+                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"
                     ]) {
-                        sh 'terraform apply -auto-approve tfplan'
+                        bat 'terraform apply -auto-approve tfplan'
                     }
                 }
             }
