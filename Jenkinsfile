@@ -1,23 +1,20 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')  // Pull AWS Access Key from Jenkins credentials
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')  // Pull AWS Secret Key from Jenkins credentials
         AWS_DEFAULT_REGION = "eu-north-1"
     }
-
     stages {
         stage('Clone Repository') {
             steps {
-                // Clone the repository with Terraform configuration
-                git 'https://github.com/your-repo/your-terraform-config.git'
+                git 'https://github.com/VETRI9876/Incident_Tracker.git'
             }
         }
 
         stage('Terraform Init') {
             steps {
                 script {
-                    // Run terraform init to initialize Terraform configuration
                     sh 'terraform init'
                 }
             }
@@ -26,7 +23,6 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 script {
-                    // Run terraform plan to show what changes will be applied
                     sh 'terraform plan -out=tfplan'
                 }
             }
@@ -35,13 +31,11 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 script {
-                    // Run terraform apply to apply the plan
                     sh 'terraform apply -auto-approve tfplan'
                 }
             }
         }
     }
-
     post {
         success {
             echo 'Terraform applied successfully!'
