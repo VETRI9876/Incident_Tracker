@@ -1,14 +1,15 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')  // Pull AWS Access Key from Jenkins credentials
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')  // Pull AWS Secret Key from Jenkins credentials
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_DEFAULT_REGION = "eu-north-1"
     }
     stages {
-        stage('Clone Repository') {
+        stage('Checkout SCM') {
             steps {
-                git 'https://github.com/VETRI9876/Incident_Tracker.git'
+                // Specify the correct branch here (main)
+                git branch: 'main', url: 'https://github.com/VETRI9876/Incident_Tracker.git'
             }
         }
 
