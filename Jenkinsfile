@@ -15,17 +15,19 @@ pipeline {
         stage('Terraform Init & Plan') {
             steps {
                 withCredentials([ 
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'TF_AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'TF_AWS_SECRET_ACCESS_KEY')
                 ]) {
                     withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"
+                        "AWS_ACCESS_KEY_ID=${env.TF_AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.TF_AWS_SECRET_ACCESS_KEY}"
                     ]) {
-                        bat '''
-                            terraform init
-                            terraform plan -out=tfplan
-                        '''
+                        dir('terraform') {
+                            sh '''
+                                terraform init
+                                terraform plan -out=tfplan
+                            '''
+                        }
                     }
                 }
             }
@@ -35,14 +37,16 @@ pipeline {
             steps {
                 input message: '✅ Approve Terraform Apply?'
                 withCredentials([ 
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'TF_AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'TF_AWS_SECRET_ACCESS_KEY')
                 ]) {
                     withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"
+                        "AWS_ACCESS_KEY_ID=${env.TF_AWS_ACCESS_KEY_ID}",
+                        "AWS_SECRET_ACCESS_KEY=${env.TF_AWS_SECRET_ACCESS_KEY}"
                     ]) {
-                        bat 'terraform apply -auto-approve tfplan'
+                        dir('terraform') {
+                            sh 'terraform apply -auto-approve tfplan'
+                        }
                     }
                 }
             }
