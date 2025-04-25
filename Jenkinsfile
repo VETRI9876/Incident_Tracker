@@ -18,16 +18,11 @@ pipeline {
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'TF_AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'TF_AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.TF_AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.TF_AWS_SECRET_ACCESS_KEY}"
-                    ]) {
-                        dir('terraform') {
-                            sh '''
-                                terraform init
-                                terraform plan -out=tfplan
-                            '''
-                        }
+                    dir('terraform') {
+                        sh '''
+                            terraform init
+                            terraform plan -out=tfplan
+                        '''
                     }
                 }
             }
@@ -40,13 +35,8 @@ pipeline {
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'TF_AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'TF_AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    withEnv([
-                        "AWS_ACCESS_KEY_ID=${env.TF_AWS_ACCESS_KEY_ID}",
-                        "AWS_SECRET_ACCESS_KEY=${env.TF_AWS_SECRET_ACCESS_KEY}"
-                    ]) {
-                        dir('terraform') {
-                            sh 'terraform apply -auto-approve tfplan'
-                        }
+                    dir('terraform') {
+                        sh 'terraform apply -auto-approve tfplan'
                     }
                 }
             }
