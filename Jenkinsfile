@@ -8,7 +8,8 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/VETRI9876/Incident_Tracker.git'
+                // Specify the main branch in the git clone command
+                git branch: 'main', url: 'https://github.com/VETRI9876/Incident_Tracker.git'
             }
         }
 
