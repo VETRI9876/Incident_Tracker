@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    tools {
+        git 'Default' 
+    }
+    
     stages {
         stage('Check Git Installation') {
             steps {
