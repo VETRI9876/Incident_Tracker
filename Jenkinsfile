@@ -1,11 +1,21 @@
 pipeline {
     agent any
-    
-    tools {
-        git 'Git'  // This should match the name you gave in the Global Tool Configuration
+
+    environment {
+        GIT_HOME = 'C:\\Users\\Vetri\\AppData\\Local\\Programs\\Git\\cmd'  // Set Git home directory
+        PATH = "${env.GIT_HOME};${env.PATH}"  // Add Git to the PATH for this pipeline
     }
 
     stages {
+        stage('Checkout SCM') {
+            steps {
+                script {
+                    // Check out the repository
+                    checkout scm
+                }
+            }
+        }
+        
         stage('Check Git Installation') {
             steps {
                 script {
