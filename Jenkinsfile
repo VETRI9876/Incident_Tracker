@@ -1,16 +1,14 @@
 pipeline {
     agent any
-
     stages {
         stage('Check Git Version') {
             steps {
-                sh 'git --version'
+                bat 'git --version'
             }
         }
-
         stage('Check Terraform Version') {
             steps {
-                sh 'terraform version'
+                bat 'terraform version'
             }
         }
     }
