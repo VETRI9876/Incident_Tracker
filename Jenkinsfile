@@ -1,86 +1,67 @@
 pipeline {
     agent any
 
-    tools {
-        git 'Git'  // Use the default Git installation configured in Jenkins
-    }
-
     environment {
-        // Ensure Git is correctly found in the system's PATH
-        GIT_PATH = "C:\\Program Files\\Git\\cmd\\git.exe"  // Adjust path to your Git installation
-        TF_PATH = "C:\\Users\\Vetri\\terraform_1.11.4_windows_amd64\\terraform.exe"  // Updated Terraform path
+        IMAGE_NAME = "ghcr.io/vetri9876/incident-tracker"
+        IMAGE_TAG = "latest"
+        AWS_DEFAULT_REGION = "eu-north-1"
+        GHCR_CREDENTIALS_ID = "ghcr-creds"         
+        AWS_CREDENTIALS_ID = "aws-creds"            
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Check if Git is available in the environment
-                    echo "Git Path: ${env.GIT_PATH}"
-                    sh '"${GIT_PATH}" --version'  // Check Git version to confirm the correct Git tool is being used
-                    // Checkout code from the Git repository
-                    checkout scm
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
                 }
             }
         }
 
-        stage('Verify Terraform Installation') {
+        stage('Login to GHCR') {
             steps {
-                script {
-                    // Check Terraform version to ensure it's available
-                    echo "Terraform Path: ${env.TF_PATH}"
-                    sh '"${TF_PATH}" --version'  // Check Terraform version
+                withCredentials([usernamePassword(credentialsId: "${GHCR_CREDENTIALS_ID}", usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN')]) {
+                    sh """
+                        echo "${GITHUB_TOKEN}" | docker login ghcr.io -u ${GITHUB_USERNAME} --password-stdin
+                    """
                 }
             }
         }
 
-        stage('Terraform Init & Plan') {
+        stage('Push Docker Image to GHCR') {
             steps {
                 script {
-                    echo 'Initializing Terraform...'
-                    // Ensure Terraform initialization and planning are done
-                    dir('terraform') {
-                        withCredentials([string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
-                                          string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID')]) {
-                            // Initialize Terraform
-                            sh '"${TF_PATH}" init'
-                            // Plan Terraform changes
-                            sh '"${TF_PATH}" plan'
-                        }
+                    docker.withRegistry('https://ghcr.io', "${GHCR_CREDENTIALS_ID}") {
+                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push()
                     }
                 }
             }
         }
 
-        stage('Terraform Apply') {
+        stage('Terraform Init & Apply') {
             steps {
-                script {
-                    echo 'Applying Terraform changes...'
-                    // Apply the Terraform changes
-                    dir('terraform') {
-                        withCredentials([string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
-                                          string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID')]) {
-                            // Apply the plan with auto-approval
-                            sh '"${TF_PATH}" apply -auto-approve'
-                        }
-                    }
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
+                    sh '''
+                        terraform init
+                        terraform apply -auto-approve
+                    '''
                 }
-            }
-        }
-
-        stage('Post Actions') {
-            steps {
-                echo 'Terraform execution complete.'
             }
         }
     }
 
     post {
-        failure {
-            echo 'Terraform failed. Check the logs for errors.'
-        }
         success {
-            echo 'Pipeline completed successfully.'
+            echo "✅ Deployment successful!"
+        }
+        failure {
+            echo "❌ Deployment failed. Check logs."
         }
     }
 }
