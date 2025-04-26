@@ -1,14 +1,15 @@
 pipeline {
     agent any
+
     stages {
-        stage('Check Git Version') {
+        stage('Terraform Init') {
             steps {
-                bat 'git --version'
+                bat 'terraform init'
             }
         }
-        stage('Check Terraform Version') {
+        stage('Terraform Apply') {
             steps {
-                bat 'terraform version'
+                bat 'terraform apply -auto-approve'
             }
         }
     }
