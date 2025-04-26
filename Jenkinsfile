@@ -6,7 +6,7 @@ pipeline {
             steps {
                 script {
                     // Check Git version to verify it's installed
-                    def gitVersion = sh(script: 'git --version', returnStdout: true).trim()
+                    def gitVersion = bat(script: 'git --version', returnStdout: true).trim()
                     echo "Git Version: ${gitVersion}"
                 }
             }
