@@ -1,28 +1,44 @@
 pipeline {
     agent any
-
     environment {
-        GIT_HOME = 'C:\\Users\\Vetri\\AppData\\Local\\Programs\\Git\\cmd'  // Set Git home directory
-        PATH = "${env.GIT_HOME};${env.PATH}"  // Add Git to the PATH for this pipeline
+        AWS_ACCESS_KEY_ID     = credentials('aws-creds').username
+        AWS_SECRET_ACCESS_KEY = credentials('aws-creds').password
     }
-
+    parameters {
+        booleanParam(name: 'AUTO_APPLY', defaultValue: false, description: 'Apply Terraform changes automatically?')
+    }
     stages {
-        stage('Checkout SCM') {
+        stage('Clone Repo') {
             steps {
-                script {
-                    // Check out the repository
-                    checkout scm
-                }
+                git 'https://github.com/VETRI9876/Incident_Tracker.git'
             }
         }
-        
-        stage('Check Git Installation') {
+
+        stage('Terraform Init') {
             steps {
-                script {
-                    // Check Git version to verify it's installed
-                    def gitVersion = bat(script: 'git --version', returnStdout: true).trim()
-                    echo "Git Version: ${gitVersion}"
-                }
+                sh 'terraform init'
+            }
+        }
+
+        stage('Terraform Format & Validate') {
+            steps {
+                sh 'terraform fmt -check'
+                sh 'terraform validate'
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                sh 'terraform plan -out=tfplan'
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                expression { return params.AUTO_APPLY }
+            }
+            steps {
+                sh 'terraform apply -auto-approve tfplan'
             }
         }
     }
