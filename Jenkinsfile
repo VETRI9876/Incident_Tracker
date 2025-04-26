@@ -1,27 +1,16 @@
 pipeline {
     agent any
 
-    tools {
-        git 'DefaultGit'  // Must match the name in Global Tool Configuration
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Check Git Version') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/VETRI9876/Incident_Tracker.git'
+                sh 'git --version'
             }
         }
 
-        stage('Build') {
+        stage('Check Terraform Version') {
             steps {
-                echo '🔧 Build step goes here (e.g., npm install, mvn build, etc.)'
-            }
-        }
-
-        stage('Post-Build') {
-            steps {
-                echo '✅ Post-build step (like archiving artifacts)'
+                sh 'terraform version'
             }
         }
     }
