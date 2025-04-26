@@ -2,9 +2,9 @@ pipeline {
     agent any
     
     tools {
-        git 'Default' 
+        git 'Git'  // This should match the name you gave in the Global Tool Configuration
     }
-    
+
     stages {
         stage('Check Git Installation') {
             steps {
