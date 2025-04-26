@@ -2,47 +2,42 @@ provider "aws" {
   region = "eu-north-1"
 }
 
-# Create a security group to allow HTTP traffic
-resource "aws_security_group" "allow_http" {
-  name        = "allow_http"
-  description = "Allow HTTP traffic"
-  
+
+resource "aws_security_group" "allow_http_ssh" {
+  name        = "allow_http_ssh"
+  description = "Allow HTTP and SSH traffic"
+
   ingress {
+    description = "Allow HTTP traffic"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    description = "Allow SSH traffic"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-# Create EC2 instance and install Docker & AWS CLI
+# Create EC2 instance
 resource "aws_instance" "app_instance" {
-  ami           = "ami-0c1ac8a41498c1a9c"  # Replace with your specific Ubuntu AMI ID
-  instance_type = "t2.micro"
-  key_name      = "devops"  # Replace with your EC2 key pair name for SSH access
+  ami           = "ami-0c1ac8a41498c1a9c"
+  instance_type = "t3.micro"
+  key_name      = "devops"
 
-  security_groups = [aws_security_group.allow_http.name]
-
-  # Install Docker, AWS CLI, and run Docker container
-  user_data = <<-EOF
-              #!/bin/bash
-              # Update and install necessary dependencies
-              sudo apt-get update -y
-              sudo apt-get install -y docker.io awscli
-
-              # Start and enable Docker service
-              sudo systemctl start docker
-              sudo systemctl enable docker
-
-              # ECR login and pull the Docker image
-              sudo aws ecr get-login-password --region eu-north-1 | sudo docker login --username AWS --password-stdin 409784048198.dkr.ecr.eu-north-1.amazonaws.com
-
-              # Pull the Docker image from ECR
-              sudo docker pull 409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest
-
-              # Run the Docker container
-              sudo docker run -d -p 80:8501 409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest
-              EOF
+  security_groups = [aws_security_group.allow_http_ssh.name]
 
   tags = {
     Name = "devops-incident-tracker-instance"
