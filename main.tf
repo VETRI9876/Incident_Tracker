@@ -2,10 +2,9 @@ provider "aws" {
   region = "eu-north-1"
 }
 
-
 resource "aws_security_group" "allow_http_ssh" {
   name        = "allow_http_ssh"
-  description = "Allow HTTP and SSH traffic"
+  description = "Allow HTTP, SSH, and Streamlit traffic"
 
   ingress {
     description = "Allow HTTP traffic"
@@ -23,6 +22,14 @@ resource "aws_security_group" "allow_http_ssh" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "Allow Streamlit traffic"
+    from_port   = 8501
+    to_port     = 8501
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -34,7 +41,7 @@ resource "aws_security_group" "allow_http_ssh" {
 # Create EC2 instance
 resource "aws_instance" "app_instance" {
   ami           = "ami-0c1ac8a41498c1a9c"
-  instance_type = "t3.micro"
+  instance_type = "t3.medium"
   key_name      = "devops"
 
   security_groups = [aws_security_group.allow_http_ssh.name]
