@@ -1,12 +1,10 @@
 pipeline {
     agent any
-    environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-creds').username
-        AWS_SECRET_ACCESS_KEY = credentials('aws-creds').password
-    }
+
     parameters {
         booleanParam(name: 'AUTO_APPLY', defaultValue: false, description: 'Apply Terraform changes automatically?')
     }
+
     stages {
         stage('Clone Repo') {
             steps {
@@ -16,7 +14,13 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform init
+                    '''
+                }
             }
         }
 
@@ -29,7 +33,13 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                sh 'terraform plan -out=tfplan'
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform plan -out=tfplan
+                    '''
+                }
             }
         }
 
@@ -38,7 +48,13 @@ pipeline {
                 expression { return params.AUTO_APPLY }
             }
             steps {
-                sh 'terraform apply -auto-approve tfplan'
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        terraform apply -auto-approve tfplan
+                    '''
+                }
             }
         }
     }
