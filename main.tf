@@ -79,7 +79,7 @@ resource "aws_ecs_cluster" "incident_tracker_cluster" {
   name = "incident-tracker-cluster"
 }
 
-# Task Definition
+# ECS Task Definition
 resource "aws_ecs_task_definition" "incident_tracker_task" {
   family                   = "incident-tracker-task"
   requires_compatibilities = ["FARGATE"]
@@ -95,7 +95,7 @@ resource "aws_ecs_task_definition" "incident_tracker_task" {
       containerPort = 8501
       hostPort      = 8501
       protocol      = "tcp"
-    }]
+    }],
     environment = [
       {
         name  = "AWS_ACCESS_KEY_ID"
@@ -109,7 +109,7 @@ resource "aws_ecs_task_definition" "incident_tracker_task" {
   }])
 }
 
-# Application Load Balancer
+# ALB
 resource "aws_lb" "incident_tracker_alb" {
   name               = "incident-tracker-alb"
   internal           = false
@@ -119,10 +119,9 @@ resource "aws_lb" "incident_tracker_alb" {
     aws_subnet.incident_tracker_subnet_1.id,
     aws_subnet.incident_tracker_subnet_2.id
   ]
-  enable_deletion_protection = false
 }
 
-# Target Group with IP mode
+# Target Group
 resource "aws_lb_target_group" "incident_tracker_tg" {
   name        = "incident-tracker-tg"
   port        = 80
@@ -171,4 +170,3 @@ resource "aws_ecs_service" "incident_tracker_service" {
 output "alb_url" {
   value = aws_lb.incident_tracker_alb.dns_name
 }
-
