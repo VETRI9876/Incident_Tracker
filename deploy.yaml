@@ -2,6 +2,7 @@
 - name: Install Docker, AWS CLI, and Deploy Docker Image from ECR
   hosts: all
   become: yes
+  gather_facts: no  # Skip gathering facts to speed up the deployment
   tasks:
 
     # Update apt cache and upgrade packages
