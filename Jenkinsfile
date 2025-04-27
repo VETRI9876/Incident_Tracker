@@ -11,18 +11,21 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
+                // Initialize Terraform to set up necessary configurations
                 bat 'terraform init'
             }
         }
 
         stage('Terraform Plan') {
             steps {
+                // Generate Terraform plan to see the changes that will be applied
                 bat 'terraform plan'
             }
         }
 
         stage('Terraform Apply') {
             steps {
+                // Apply the Terraform configuration to create or update infrastructure
                 bat 'terraform apply -auto-approve'
             }
         }
@@ -35,10 +38,13 @@ pipeline {
                     echo "EC2 Public IP: ${ec2_ip}"
 
                     // Write the inventory.ini file with the fetched EC2 IP
-                    writeFile file: 'inventory.ini', text: """
-[servers]
+                    writeFile file: 'inventory.ini', text: """[servers]
 ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
 """
+                    
+                    // Optional: Print the contents of the inventory.ini file for verification
+                    echo "Inventory File Content:"
+                    bat 'type inventory.ini'
                 }
             }
         }
