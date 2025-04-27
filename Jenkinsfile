@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
-                    echo "EC2 Public IP: ${ec2_ip}"
+                    echo "Fetched EC2 Public IP: ${ec2_ip}"
                     env.EC2_PUBLIC_IP = ec2_ip
                 }
             }
@@ -48,12 +48,11 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                script {
-                    bat """
-                        wsl ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key "~/devops.pem" deploy.yaml
-                    """
-                }
+                bat """
+                    wsl ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key ~/devops.pem deploy.yaml
+                """
             }
         }
+
     }
 }
