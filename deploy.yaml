@@ -2,7 +2,7 @@
 - name: Install Docker, AWS CLI, Pull ECR Image, and Run Streamlit App
   hosts: all
   become: yes
-  gather_facts: no
+  gather_facts: yes  # Changed from 'no' to 'yes' to gather facts like IP, hostname, etc.
   vars:
     aws_region: "{{ lookup('env', 'AWS_REGION') }}"
     aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
@@ -35,22 +35,21 @@
         dest: /tmp
         remote_src: yes
 
-    - name: Install AWS CLI (with --update flag)
+    - name: Install AWS CLI
       command: /tmp/aws/install --update
       register: aws_cli_install
       failed_when: "'error' in aws_cli_install.stderr"
       ignore_errors: no
 
     - name: Add Docker GPG key
-      shell: |
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+      shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
       args:
         executable: /bin/bash
       ignore_errors: no
 
     - name: Add Docker repository
       shell: |
-        add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
       args:
         executable: /bin/bash
       ignore_errors: no
