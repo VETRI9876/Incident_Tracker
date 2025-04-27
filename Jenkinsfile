@@ -30,10 +30,10 @@ pipeline {
         stage('Fetch EC2 Public IP') {
             steps {
                 script {
-                    def ec2_ip = bat(script: 'terraform output -raw instance_public_ip', returnStdout: true).trim()
-                    echo "Fetched EC2 Public IP: ${ec2_ip}"
-                    // Save IP in environment variable for next stages
-                    env.EC2_PUBLIC_IP = ec2_ip
+                    def ec2_ip_output = bat(script: 'terraform output -raw instance_public_ip', returnStdout: true).trim()
+                    echo "Fetched EC2 Public IP: ${ec2_ip_output}"
+                    // Save only the IP address cleanly
+                    env.EC2_PUBLIC_IP = ec2_ip_output
                 }
             }
         }
@@ -50,10 +50,9 @@ pipeline {
         stage('Run Ansible Playbook') {
             steps {
                 script {
-                    // Build Ansible inventory dynamically
-                    def inventory = "${env.EC2_PUBLIC_IP},"
+                    echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
                     bat """
-                        wsl ansible-playbook -i '${inventory}' -u ubuntu --private-key ~/devops.pem deploy.yaml
+                        wsl ansible-playbook -i '${env.EC2_PUBLIC_IP},' -u ubuntu --private-key ~/devops.pem deploy.yaml
                     """
                 }
             }
