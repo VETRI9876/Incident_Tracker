@@ -2,6 +2,7 @@
 - name: Install Docker, AWS CLI, Pull ECR Image, and Run Streamlit App
   hosts: all
   become: yes
+  gather_facts: no
   vars:
     aws_region: "{{ lookup('env', 'AWS_REGION') }}"
     aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
@@ -9,7 +10,7 @@
     ecr_registry: "409784048198.dkr.ecr.eu-north-1.amazonaws.com"
     ecr_image: "vetri:latest"
     container_name: "incident-tracker"
-    app_port: 8501  
+    app_port: 8501
 
   tasks:
     - name: Update apt and install required packages
@@ -36,19 +37,23 @@
 
     - name: Install AWS CLI (with --update flag)
       command: /tmp/aws/install --update
-      ignore_errors: yes
+      register: aws_cli_install
+      failed_when: "'error' in aws_cli_install.stderr"
+      ignore_errors: no
 
     - name: Add Docker GPG key
       shell: |
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
       args:
         executable: /bin/bash
+      ignore_errors: no
 
     - name: Add Docker repository
       shell: |
         add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
       args:
         executable: /bin/bash
+      ignore_errors: no
 
     - name: Install Docker
       apt:
@@ -71,11 +76,17 @@
         AWS_REGION: "{{ aws_region }}"
       args:
         executable: /bin/bash
+      register: docker_login_result
+      failed_when: "'error' in docker_login_result.stderr"
+      ignore_errors: no
 
     - name: Pull Docker image from ECR
       docker_image:
         name: "{{ ecr_registry }}/{{ ecr_image }}"
         source: pull
+      register: docker_pull_result
+      failed_when: "'error' in docker_pull_result.stderr"
+      ignore_errors: no
 
     - name: Run Docker container for Streamlit app
       community.docker.docker_container:
@@ -89,3 +100,17 @@
           AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
           AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
           AWS_DEFAULT_REGION: "{{ aws_region }}"
+      register: streamlit_container_result
+      failed_when: "'error' in streamlit_container_result.stderr"
+      ignore_errors: no
+
+    - name: Check if Streamlit app is running
+      uri:
+        url: "http://localhost:{{ app_port }}"
+        method: GET
+        status_code: 200
+      register: streamlit_health_check
+      retries: 5
+      delay: 10
+      until: streamlit_health_check.status == 200
+      timeout: 60
