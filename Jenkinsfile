@@ -37,9 +37,9 @@ pipeline {
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                     echo "EC2 Public IP: ${ec2_ip}"
 
-                    // Write the inventory.ini file with the fetched EC2 IP
+                    // Write the inventory.ini file with the correct format for Ansible
                     writeFile file: 'inventory.ini', text: """[servers]
-${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=C:/Users/Vetri/.jenkins/workspace/Jenkins-Piepline/devops.pem
+${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=${env.WORKSPACE}\\devops.pem
 """
                     
                     // Optional: Print the contents of the inventory.ini file for verification
