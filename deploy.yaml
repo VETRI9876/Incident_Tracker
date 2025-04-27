@@ -9,10 +9,17 @@
     - name: Update apt cache
       apt:
         update_cache: yes
+        cache_valid_time: 3600  # Only update the cache if it's older than 1 hour
+        dpkg_options: "force-confold"
+        options:
+          - "-o Dpkg::Progress-Fancy=0"
 
     - name: Upgrade all packages
       apt:
         upgrade: yes
+        dpkg_options: "force-confold"
+        options:
+          - "-o Dpkg::Progress-Fancy=0"
 
     # Install dependencies for Docker and AWS CLI
     - name: Install dependencies for Docker and AWS CLI
@@ -23,12 +30,18 @@
           - curl
           - software-properties-common
         state: present
+        dpkg_options: "force-confold"
+        options:
+          - "-o Dpkg::Progress-Fancy=0"
 
     # Install Docker
     - name: Install Docker
       apt:
         name: docker.io
         state: present
+        dpkg_options: "force-confold"
+        options:
+          - "-o Dpkg::Progress-Fancy=0"
 
     - name: Start Docker service
       systemd:
@@ -41,6 +54,9 @@
       apt:
         name: awscli
         state: present
+        dpkg_options: "force-confold"
+        options:
+          - "-o Dpkg::Progress-Fancy=0"
 
     # Configure AWS CLI with provided credentials
     - name: Configure AWS CLI with provided credentials
