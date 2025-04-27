@@ -39,7 +39,7 @@ pipeline {
 
                     // Write the inventory.ini file with the fetched EC2 IP
                     writeFile file: 'inventory.ini', text: """[servers]
-${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
+${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=C:/Users/Vetri/.jenkins/workspace/Jenkins-Piepline/devops.pem
 """
                     
                     // Optional: Print the contents of the inventory.ini file for verification
