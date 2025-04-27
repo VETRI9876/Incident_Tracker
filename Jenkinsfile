@@ -33,8 +33,7 @@ pipeline {
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                     echo "EC2 Public IP: ${ec2_ip}"
 
-                    // Corrected inventory file path
-                    writeFile file: 'inventory.ini', text: "[servers]\n${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem"
+                    writeFile file: 'inventory.ini', text: """[servers]\n${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/devops.pem"""
                 }
             }
         }
@@ -53,7 +52,7 @@ pipeline {
         stage('Run Ansible Playbook') {
             steps {
                 bat '''
-                  docker run --rm -v %cd%:/workspace -w /workspace ansible/ansible ansible-playbook -i inventory.ini deploy.yaml
+                  docker run --rm -v %cd%:/workspace -w /workspace willhallonline/ansible ansible-playbook -i inventory.ini deploy.yaml
                 '''
             }
         }
