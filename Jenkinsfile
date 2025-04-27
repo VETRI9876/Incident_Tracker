@@ -49,17 +49,9 @@ pipeline {
             }
         }
 
-        stage('Install Ansible') {
-            steps {
-                bat '''
-                  choco install ansible -y
-                '''
-            }
-        }
-
         stage('Run Ansible Playbook') {
             steps {
-                bat '''
+                sh '''
                   ansible-playbook -i inventory.ini deploy.yaml
                 '''
             }
