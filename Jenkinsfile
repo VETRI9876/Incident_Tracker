@@ -51,7 +51,7 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                sh '''
+                bat '''
                   ansible-playbook -i inventory.ini deploy.yaml
                 '''
             }
