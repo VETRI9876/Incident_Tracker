@@ -33,7 +33,10 @@ pipeline {
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                     echo "EC2 Public IP: ${ec2_ip}"
 
-                    writeFile file: 'inventory.ini', text: """[servers]\n${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/devops.pem"""
+                    writeFile file: 'inventory.ini', text: """
+[servers]
+${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
+"""
                 }
             }
         }
@@ -42,8 +45,8 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'devops-pem', variable: 'PEM_CONTENT')]) {
                     bat '''
-                      echo %PEM_CONTENT% > %USERPROFILE%\\devops.pem
-                      icacls %USERPROFILE%\\devops.pem /inheritance:r /grant:r %USERNAME%:R
+                      echo %PEM_CONTENT% > %cd%\\devops.pem
+                      icacls %cd%\\devops.pem /inheritance:r /grant:r %USERNAME%:R
                     '''
                 }
             }
