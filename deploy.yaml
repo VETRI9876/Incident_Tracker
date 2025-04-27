@@ -4,6 +4,8 @@
   become: yes
   vars:
     aws_region: "{{ lookup('env', 'AWS_REGION') }}"
+    aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+    aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
     ecr_registry: "409784048198.dkr.ecr.eu-north-1.amazonaws.com"
     ecr_image: "vetri:latest"
     container_name: "incident-tracker"
@@ -64,8 +66,8 @@
       shell: |
         aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_registry }}
       environment:
-        AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
-        AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
         AWS_REGION: "{{ aws_region }}"
       args:
         executable: /bin/bash
@@ -84,6 +86,6 @@
         published_ports:
           - "{{ app_port }}:8501"
         env:
-          AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
-          AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+          AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
+          AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
           AWS_DEFAULT_REGION: "{{ aws_region }}"
