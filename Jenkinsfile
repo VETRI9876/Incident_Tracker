@@ -33,8 +33,7 @@ pipeline {
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                     echo "EC2 Public IP: ${ec2_ip}"
 
-                    writeFile file: 'inventory.ini', text: """
-[servers]
+                    writeFile file: 'inventory.ini', text: """[servers]
 ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
 """
                 }
@@ -56,6 +55,14 @@ ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
             steps {
                 bat '''
                   docker run --rm -v %cd%:/workspace -w /workspace willhallonline/ansible ansible-playbook -i inventory.ini deploy.yaml
+                '''
+            }
+        }
+
+        stage('Cleanup PEM Key') {
+            steps {
+                bat '''
+                  del %cd%\\devops.pem
                 '''
             }
         }
