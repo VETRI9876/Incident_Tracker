@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key')       
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')    
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')       // Jenkins Credentials
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')    // Jenkins Credentials
         AWS_REGION = 'eu-north-1'
     }
 
@@ -41,15 +41,20 @@ pipeline {
                         def ec2_ip = sh(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                         echo "EC2 Public IP: ${ec2_ip}"
 
-                        // Create inventory file dynamically
+                        // Write inventory.ini with the public IP
                         writeFile file: 'inventory.ini', text: """[servers]\n${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/devops.pem"""
-
-                        // Copy the .pem file to home directory and set permissions
-                        sh '''
-                          cp /mnt/c/Users/Vetri/devops.pem ~/devops.pem
-                          chmod 600 ~/devops.pem
-                        '''
                     }
+                }
+            }
+        }
+
+        stage('Save PEM Key Locally') {
+            steps {
+                withCredentials([string(credentialsId: 'devops-pem', variable: 'PEM_CONTENT')]) {
+                    sh '''
+                      echo "$PEM_CONTENT" > ~/devops.pem
+                      chmod 600 ~/devops.pem
+                    '''
                 }
             }
         }
