@@ -11,37 +11,29 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                dir('terraform') {
-                    bat 'terraform init'
-                }
+                bat 'terraform init'
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                dir('terraform') {
-                    bat 'terraform plan'
-                }
+                bat 'terraform plan'
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                dir('terraform') {
-                    bat 'terraform apply -auto-approve'
-                }
+                bat 'terraform apply -auto-approve'
             }
         }
 
         stage('Fetch EC2 Public IP and Prepare for Ansible') {
             steps {
-                dir('terraform') {
-                    script {
-                        def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
-                        echo "EC2 Public IP: ${ec2_ip}"
+                script {
+                    def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
+                    echo "EC2 Public IP: ${ec2_ip}"
 
-                        writeFile file: 'inventory.ini', text: """[servers]\n${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/devops.pem"""
-                    }
+                    writeFile file: 'inventory.ini', text: """[servers]\n${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/devops.pem"""
                 }
             }
         }
