@@ -30,11 +30,11 @@ pipeline {
         stage('Fetch EC2 Public IP') {
             steps {
                 script {
-                    // Fetch EC2 public IP
+                    // Fetch EC2 public IP and save to environment
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                     echo "EC2 Public IP: ${ec2_ip}"
 
-                    // Save IP into environment variable for next stages
+                    // Export IP as environment variable
                     env.EC2_PUBLIC_IP = ec2_ip
                 }
             }
@@ -42,7 +42,7 @@ pipeline {
 
         stage('Prepare PEM for WSL') {
             steps {
-                // Copy PEM file inside WSL and set permissions
+                // Copy PEM file to WSL and set permissions
                 bat '''
                     wsl cp /mnt/c/Users/Vetri/devops.pem ~/devops.pem
                     wsl chmod 600 ~/devops.pem
@@ -54,11 +54,10 @@ pipeline {
             steps {
                 script {
                     bat """
-                        wsl ansible-playbook -i "${EC2_PUBLIC_IP}," -u ubuntu --private-key "~/devops.pem" deploy.yaml
+                        wsl ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key "~/devops.pem" deploy.yaml
                     """
                 }
             }
         }
-
     }
 }
