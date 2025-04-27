@@ -1,0 +1,89 @@
+---
+- name: Install Docker, AWS CLI, Pull ECR Image, and Run Streamlit App
+  hosts: all
+  become: yes
+  vars:
+    aws_region: "{{ lookup('env', 'AWS_REGION') }}"
+    ecr_registry: "409784048198.dkr.ecr.eu-north-1.amazonaws.com"
+    ecr_image: "vetri:latest"
+    container_name: "incident-tracker"
+    app_port: 8501  
+
+  tasks:
+    - name: Update apt and install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - unzip
+        state: latest
+        update_cache: yes
+
+    - name: Download AWS CLI installer
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+
+    - name: Unzip AWS CLI installer
+      unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: yes
+
+    - name: Install AWS CLI (with --update flag)
+      command: /tmp/aws/install --update
+      ignore_errors: yes
+
+    - name: Add Docker GPG key
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+      args:
+        executable: /bin/bash
+
+    - name: Add Docker repository
+      shell: |
+        add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      args:
+        executable: /bin/bash
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: yes
+
+    - name: Ensure Docker service is started and enabled
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Authenticate Docker with AWS ECR
+      shell: |
+        aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_registry }}
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+        AWS_REGION: "{{ aws_region }}"
+      args:
+        executable: /bin/bash
+
+    - name: Pull Docker image from ECR
+      docker_image:
+        name: "{{ ecr_registry }}/{{ ecr_image }}"
+        source: pull
+
+    - name: Run Docker container for Streamlit app
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ ecr_registry }}/{{ ecr_image }}"
+        state: started
+        restart_policy: always
+        published_ports:
+          - "{{ app_port }}:8501"
+        env:
+          AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+          AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+          AWS_DEFAULT_REGION: "{{ aws_region }}"
