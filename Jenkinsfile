@@ -30,10 +30,13 @@ pipeline {
         stage('Fetch EC2 Public IP and Prepare for Ansible') {
             steps {
                 script {
+                    // Fetch EC2 public IP from Terraform output
                     def ec2_ip = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
                     echo "EC2 Public IP: ${ec2_ip}"
 
-                    writeFile file: 'inventory.ini', text: """[servers]
+                    // Write the inventory.ini file with the fetched EC2 IP
+                    writeFile file: 'inventory.ini', text: """
+[servers]
 ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
 """
                 }
@@ -42,6 +45,7 @@ ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
 
         stage('Save PEM Key Locally') {
             steps {
+                // Save the PEM key locally using Jenkins credentials
                 withCredentials([string(credentialsId: 'devops-pem', variable: 'PEM_CONTENT')]) {
                     bat '''
                       echo %PEM_CONTENT% > %cd%\\devops.pem
@@ -53,6 +57,7 @@ ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
 
         stage('Run Ansible Playbook') {
             steps {
+                // Run Ansible playbook inside a Docker container
                 bat '''
                   docker run --rm -v %cd%:/workspace -w /workspace willhallonline/ansible ansible-playbook -i inventory.ini deploy.yaml
                 '''
@@ -61,6 +66,7 @@ ${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/workspace/devops.pem
 
         stage('Cleanup PEM Key') {
             steps {
+                // Clean up the PEM file after Ansible playbook run
                 bat '''
                   del %cd%\\devops.pem
                 '''
