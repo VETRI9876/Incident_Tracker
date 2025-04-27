@@ -30,10 +30,12 @@ pipeline {
         stage('Fetch EC2 Public IP') {
             steps {
                 script {
-                    def ec2_ip_output = bat(script: 'terraform output -raw instance_public_ip', returnStdout: true).trim()
-                    echo "Fetched EC2 Public IP: ${ec2_ip_output}"
-                    // Save only the IP address cleanly
-                    env.EC2_PUBLIC_IP = ec2_ip_output
+                    def output = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
+                    // Only take the last line (pure IP)
+                    def lines = output.readLines()
+                    def ec2_ip = lines[-1]    // Last line
+                    echo "Fetched EC2 Public IP: ${ec2_ip}"
+                    env.EC2_PUBLIC_IP = ec2_ip
                 }
             }
         }
