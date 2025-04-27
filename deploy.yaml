@@ -1,115 +1,72 @@
 ---
-- name: Install Docker, AWS CLI, Pull ECR Image, and Run Streamlit App
+- name: Install Docker, AWS CLI, and Deploy Docker Image from ECR
   hosts: all
   become: yes
-  gather_facts: yes  # Gather facts like IP, hostname, etc.
-  vars:
-    aws_region: "{{ lookup('env', 'AWS_REGION') }}"
-    aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
-    aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
-    ecr_registry: "409784048198.dkr.ecr.eu-north-1.amazonaws.com"
-    ecr_image: "vetri:latest"
-    container_name: "incident-tracker"
-    app_port: 8501
-
   tasks:
-    - name: Update apt and install required packages
+
+    # Update apt cache and upgrade packages
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: yes
+
+    # Install dependencies for Docker and AWS CLI
+    - name: Install dependencies for Docker and AWS CLI
       apt:
         name:
           - apt-transport-https
           - ca-certificates
           - curl
           - software-properties-common
-          - unzip
-        state: latest
-        update_cache: yes
+        state: present
 
-    - name: Download AWS CLI installer
-      get_url:
-        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-        dest: /tmp/awscliv2.zip
-
-    - name: Unzip AWS CLI installer
-      unarchive:
-        src: /tmp/awscliv2.zip
-        dest: /tmp
-        remote_src: yes
-
-    - name: Install AWS CLI
-      command: /tmp/aws/install --update
-      register: aws_cli_install
-      failed_when: "'error' in aws_cli_install.stderr"
-      ignore_errors: no
-
-    - name: Add Docker GPG key
-      shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-      args:
-        executable: /bin/bash
-      ignore_errors: no
-
-    - name: Add Docker repository
-      shell: |
-        add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-      args:
-        executable: /bin/bash
-      ignore_errors: no
-
+    # Install Docker
     - name: Install Docker
       apt:
-        name: docker-ce
-        state: latest
-        update_cache: yes
+        name: docker.io
+        state: present
 
-    - name: Ensure Docker service is started and enabled
+    - name: Start Docker service
       systemd:
         name: docker
-        enabled: yes
         state: started
+        enabled: yes
 
-    - name: Authenticate Docker with AWS ECR
+    # Install AWS CLI
+    - name: Install AWS CLI
+      apt:
+        name: awscli
+        state: present
+
+    # Configure AWS CLI with provided credentials
+    - name: Configure AWS CLI with provided credentials
       shell: |
-        aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_registry }}
+        aws configure set aws_access_key_id {{ aws_access_key_id }}
+        aws configure set aws_secret_access_key {{ aws_secret_access_key }}
+        aws configure set region {{ aws_region }}
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
         AWS_REGION: "{{ aws_region }}"
-      args:
-        executable: /bin/bash
-      register: docker_login_result
-      failed_when: "'error' in docker_login_result.stderr"
-      ignore_errors: no
 
+    # Authenticate Docker to AWS ECR
+    - name: Authenticate Docker to AWS ECR
+      shell: |
+        $(aws ecr get-login --no-include-email --region {{ aws_region }})
+
+    # Pull Docker image from ECR
     - name: Pull Docker image from ECR
       docker_image:
-        name: "{{ ecr_registry }}/{{ ecr_image }}"
+        name: "{{ ecr_image_name }}"
         source: pull
-      register: docker_pull_result
-      failed_when: "'error' in docker_pull_result.stderr"
-      ignore_errors: no
 
-    - name: Run Docker container for Streamlit app
-      community.docker.docker_container:
-        name: "{{ container_name }}"
-        image: "{{ ecr_registry }}/{{ ecr_image }}"
+    # Run Docker container
+    - name: Run Docker container
+      docker_container:
+        name: "incident_tracker_container"
+        image: "{{ ecr_image_name }}"
         state: started
-        restart_policy: always
-        published_ports:
-          - "{{ app_port }}:8501"
-        env:
-          AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
-          AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
-          AWS_DEFAULT_REGION: "{{ aws_region }}"
-      register: streamlit_container_result
-      failed_when: "'error' in streamlit_container_result.stderr"
-      ignore_errors: no
-
-    - name: Check if Streamlit app is running
-      uri:
-        url: "http://localhost:{{ app_port }}"
-        method: GET
-        status_code: 200
-      register: streamlit_health_check
-      retries: 5
-      delay: 10
-      until: streamlit_health_check.status == 200
-      timeout: 60
+        restart_policy: unless-stopped
