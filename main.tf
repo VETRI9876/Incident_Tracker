@@ -89,7 +89,6 @@ resource "aws_lb_target_group" "streamlit_target_group" {
     path     = "/"
     interval = 30
     timeout  = 5
-    retries  = 3
   }
 }
 
