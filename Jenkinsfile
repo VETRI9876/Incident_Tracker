@@ -15,6 +15,12 @@ pipeline {
             }
         }
 
+        stage('Terraform Validate') {
+            steps {
+                bat 'terraform validate'
+            }
+        }
+
         stage('Terraform Plan') {
             steps {
                 bat 'terraform plan'
@@ -24,39 +30,6 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 bat 'terraform apply -auto-approve'
-            }
-        }
-
-        stage('Fetch EC2 Public IP') {
-            steps {
-                script {
-                    def output = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
-                    // Only take the last line (pure IP)
-                    def lines = output.readLines()
-                    def ec2_ip = lines[-1]    // Last line
-                    echo "Fetched EC2 Public IP: ${ec2_ip}"
-                    env.EC2_PUBLIC_IP = ec2_ip
-                }
-            }
-        }
-
-        stage('Prepare PEM for WSL') {
-            steps {
-                bat '''
-                    wsl cp /mnt/c/Users/Vetri/devops.pem ~/devops.pem
-                    wsl chmod 600 ~/devops.pem
-                '''
-            }
-        }
-
-        stage('Run Ansible Playbook') {
-            steps {
-                script {
-                    echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
-                    bat """
-                        wsl ansible-playbook -i '${env.EC2_PUBLIC_IP},' -u ubuntu --private-key ~/devops.pem deploy.yaml
-                    """
-                }
             }
         }
 
