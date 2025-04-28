@@ -2,17 +2,18 @@
 - name: Install Docker, AWS CLI, and Deploy Docker Image from ECR
   hosts: all
   become: yes
-  gather_facts: yes   # It's okay to gather facts now (fast)
-
+  gather_facts: no  # Disable fact gathering for faster execution
+  strategy: free    # Run tasks in parallel
   tasks:
 
-    # Update apt cache only
-    - name: Update apt cache
+    # Update apt cache only if it's needed
+    - name: Update apt cache (only if needed)
       apt:
         update_cache: yes
-        cache_valid_time: 3600
+        cache_valid_time: 86400  # Cache valid for 24 hours
+      when: ansible_facts.packages is not defined  # Only run if apt cache is not cached already
 
-    # Install basic dependencies
+    # Install basic dependencies in parallel (faster installation)
     - name: Install basic dependencies
       apt:
         name:
@@ -21,27 +22,35 @@
           - curl
           - software-properties-common
         state: present
+      async: 600  # Run the task asynchronously for up to 10 minutes
+      poll: 0      # Don't wait for completion; move on to the next task immediately
 
-    # Install Docker using the official script (much faster)
+    # Install Docker using the official script (asynchronously)
     - name: Install Docker using official script
       shell: |
         curl -fsSL https://get.docker.com -o get-docker.sh
         sh get-docker.sh
       args:
         executable: /bin/bash
+      async: 600  # Run the task asynchronously
+      poll: 0      # Move on to the next task immediately
 
-    # Start and enable Docker service
+    # Start and enable Docker service (in parallel with other tasks)
     - name: Start Docker service
       systemd:
         name: docker
         state: started
         enabled: yes
+      async: 300  # Start the Docker service and run in the background
+      poll: 0
 
-    # Install AWS CLI
+    # Install AWS CLI (in parallel with Docker installation)
     - name: Install AWS CLI
       apt:
         name: awscli
         state: present
+      async: 300
+      poll: 0
 
     # Configure AWS CLI using environment variables
     - name: Configure AWS CLI
@@ -55,24 +64,32 @@
         AWS_REGION: "{{ aws_region }}"
       args:
         executable: /bin/bash
+      async: 300
+      poll: 0
 
-    # Authenticate Docker to AWS ECR
+    # Authenticate Docker to AWS ECR (optimized by using docker_login module)
     - name: Authenticate Docker to AWS ECR
-      shell: |
-        aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_image_name.split('/')[0] }}
-      args:
-        executable: /bin/bash
+      docker_login:
+        username: AWS
+        password: "{{ lookup('pipe', 'aws ecr get-login-password --region ' + aws_region) }}"
+        registry: "{{ ecr_image_name.split('/')[0] }}"
+      async: 300
+      poll: 0
 
-    # Pull Docker image from ECR
+    # Pull Docker image from ECR (async pull to avoid delay)
     - name: Pull Docker image from ECR
       docker_image:
         name: "{{ ecr_image_name }}"
         source: pull
+      async: 300
+      poll: 0
 
-    # Run Docker container
+    # Run Docker container (asynchronously for non-blocking execution)
     - name: Run Docker container
       docker_container:
         name: "incident_tracker_container"
         image: "{{ ecr_image_name }}"
         state: started
         restart_policy: unless-stopped
+      async: 300
+      poll: 0
