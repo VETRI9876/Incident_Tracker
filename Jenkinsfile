@@ -56,7 +56,7 @@ pipeline {
                     script {
                         echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
 
-                        // Safely passing the dynamic EC2 IP to the bash command
+                        // Fixing the command with proper IP substitution
                         def ansibleCommand = """wsl bash -c 'ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key ~/devops.pem deploy.yaml \
                             -e aws_access_key_id="${AWS_ACCESS_KEY_ID}" \
                             -e aws_secret_access_key="${AWS_SECRET_ACCESS_KEY}" \
@@ -65,6 +65,7 @@ pipeline {
 
                         echo "Running command: ${ansibleCommand}"
 
+                        // Execute the Ansible playbook command
                         bat ansibleCommand
                     }
                 }
