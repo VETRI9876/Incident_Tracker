@@ -63,7 +63,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 # IAM Role Policy Attachment
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonECSTaskExecutionRolePolicy"  # Update if needed
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"  # Corrected ARN
 }
 
 # Load Balancer Configuration
