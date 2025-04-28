@@ -56,13 +56,16 @@ pipeline {
                     script {
                         echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
 
-                        bat """
-                            wsl bash -c 'ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key ~/devops.pem deploy.yaml \
+                        // Safely passing the dynamic EC2 IP to the bash command
+                        def ansibleCommand = """wsl bash -c 'ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key ~/devops.pem deploy.yaml \
                             -e aws_access_key_id="${AWS_ACCESS_KEY_ID}" \
                             -e aws_secret_access_key="${AWS_SECRET_ACCESS_KEY}" \
                             -e aws_region="${AWS_REGION}" \
-                            -e ecr_image_name="409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest"'
-                        """
+                            -e ecr_image_name="409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest"'"""
+
+                        echo "Running command: ${ansibleCommand}"
+
+                        bat ansibleCommand
                     }
                 }
             }
