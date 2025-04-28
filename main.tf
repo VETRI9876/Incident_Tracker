@@ -63,7 +63,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 # IAM Role Policy Attachment
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonECSTaskExecutionRolePolicy"  # Update if needed
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerServiceforEC2Role"  # Updated policy ARN
 }
 
 # Load Balancer Configuration
@@ -105,6 +105,12 @@ resource "aws_lb_listener" "streamlit_listener" {
       content_type = "text/plain"
       message_body = "OK"
     }
+  }
+
+  # Forward traffic to target group
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.streamlit_target_group.arn
   }
 }
 
