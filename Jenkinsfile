@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key')       
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')    
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
         AWS_REGION = 'eu-north-1'
     }
 
@@ -30,10 +30,10 @@ pipeline {
         stage('Fetch EC2 Public IP') {
             steps {
                 script {
-                    def output = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
-                    // Only take the last line (pure IP)
-                    def lines = output.readLines()
-                    def ec2_ip = lines[-1]    // Last line
+                    def ec2_ip = bat(
+                        script: "terraform output -raw instance_public_ip", 
+                        returnStdout: true
+                    ).trim()
                     echo "Fetched EC2 Public IP: ${ec2_ip}"
                     env.EC2_PUBLIC_IP = ec2_ip
                 }
