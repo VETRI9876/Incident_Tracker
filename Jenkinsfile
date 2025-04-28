@@ -2,6 +2,8 @@ pipeline {
     agent any
 
     environment {
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')       
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')    
         AWS_REGION = 'eu-north-1'
     }
 
@@ -28,10 +30,10 @@ pipeline {
         stage('Fetch EC2 Public IP') {
             steps {
                 script {
-                    def ec2_ip = bat(
-                        script: 'terraform output -raw instance_public_ip',
-                        returnStdout: true
-                    ).trim()
+                    def output = bat(script: "terraform output -raw instance_public_ip", returnStdout: true).trim()
+                    // Only take the last line (pure IP)
+                    def lines = output.readLines()
+                    def ec2_ip = lines[-1]    // Last line
                     echo "Fetched EC2 Public IP: ${ec2_ip}"
                     env.EC2_PUBLIC_IP = ec2_ip
                 }
@@ -49,25 +51,11 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    script {
-                        echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
-
-                        // Fixing the command with proper IP substitution
-                        def ansibleCommand = """wsl bash -c 'ansible-playbook -i "${env.EC2_PUBLIC_IP}," -u ubuntu --private-key ~/devops.pem deploy.yaml \
-                            -e aws_access_key_id="${AWS_ACCESS_KEY_ID}" \
-                            -e aws_secret_access_key="${AWS_SECRET_ACCESS_KEY}" \
-                            -e aws_region="${AWS_REGION}" \
-                            -e ecr_image_name="409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest"'"""
-
-                        echo "Running command: ${ansibleCommand}"
-
-                        // Execute the Ansible playbook command
-                        bat ansibleCommand
-                    }
+                script {
+                    echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
+                    bat """
+                        wsl ansible-playbook -i '${env.EC2_PUBLIC_IP},' -u ubuntu --private-key ~/devops.pem deploy.yaml
+                    """
                 }
             }
         }
