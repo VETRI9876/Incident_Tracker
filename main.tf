@@ -33,6 +33,13 @@ resource "aws_security_group" "allow_http" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 8501
+    to_port     = 8501
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -64,6 +71,22 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"  # Corrected ARN
+}
+
+# Attach S3 Access Policy to ECS Task Execution Role
+resource "aws_iam_role_policy" "ecs_task_execution_role_s3_access" {
+  name   = "ecs-task-execution-role-s3-access"
+  role   = aws_iam_role.ecs_task_execution_role.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "s3:GetObject"
+        Effect   = "Allow"
+        Resource = "arn:aws:s3:::vetri-devops-bucket/incident_data.csv"
+      }
+    ]
+  })
 }
 
 # Load Balancer Configuration
