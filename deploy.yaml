@@ -2,27 +2,18 @@
 - name: Install Docker, AWS CLI, and Deploy Docker Image from ECR
   hosts: all
   become: yes
-  gather_facts: no  # Skip gathering facts to speed up the deployment
+  gather_facts: yes   # It's okay to gather facts now (fast)
+
   tasks:
 
-    # Update apt cache and upgrade packages
+    # Update apt cache only
     - name: Update apt cache
       apt:
         update_cache: yes
-        cache_valid_time: 3600  # Only update the cache if it's older than 1 hour
-        dpkg_options: "force-confold"
-        options:
-          - "-o Dpkg::Progress-Fancy=0"
+        cache_valid_time: 3600
 
-    - name: Upgrade all packages
-      apt:
-        upgrade: yes
-        dpkg_options: "force-confold"
-        options:
-          - "-o Dpkg::Progress-Fancy=0"
-
-    # Install dependencies for Docker and AWS CLI
-    - name: Install dependencies for Docker and AWS CLI
+    # Install basic dependencies
+    - name: Install basic dependencies
       apt:
         name:
           - apt-transport-https
@@ -30,19 +21,16 @@
           - curl
           - software-properties-common
         state: present
-        dpkg_options: "force-confold"
-        options:
-          - "-o Dpkg::Progress-Fancy=0"
 
-    # Install Docker
-    - name: Install Docker
-      apt:
-        name: docker.io
-        state: present
-        dpkg_options: "force-confold"
-        options:
-          - "-o Dpkg::Progress-Fancy=0"
+    # Install Docker using the official script (much faster)
+    - name: Install Docker using official script
+      shell: |
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+      args:
+        executable: /bin/bash
 
+    # Start and enable Docker service
     - name: Start Docker service
       systemd:
         name: docker
@@ -54,12 +42,9 @@
       apt:
         name: awscli
         state: present
-        dpkg_options: "force-confold"
-        options:
-          - "-o Dpkg::Progress-Fancy=0"
 
-    # Configure AWS CLI with provided credentials
-    - name: Configure AWS CLI with provided credentials
+    # Configure AWS CLI using environment variables
+    - name: Configure AWS CLI
       shell: |
         aws configure set aws_access_key_id {{ aws_access_key_id }}
         aws configure set aws_secret_access_key {{ aws_secret_access_key }}
@@ -68,11 +53,15 @@
         AWS_ACCESS_KEY_ID: "{{ aws_access_key_id }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
         AWS_REGION: "{{ aws_region }}"
+      args:
+        executable: /bin/bash
 
     # Authenticate Docker to AWS ECR
     - name: Authenticate Docker to AWS ECR
       shell: |
-        $(aws ecr get-login --no-include-email --region {{ aws_region }})
+        aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_image_name.split('/')[0] }}
+      args:
+        executable: /bin/bash
 
     # Pull Docker image from ECR
     - name: Pull Docker image from ECR
