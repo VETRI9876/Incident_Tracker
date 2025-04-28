@@ -84,6 +84,11 @@ resource "aws_iam_role_policy" "ecs_task_execution_role_s3_access" {
         Action   = "s3:GetObject"
         Effect   = "Allow"
         Resource = "arn:aws:s3:::vetri-devops-bucket/incident_data.csv"
+      },
+      {
+        Action   = "s3:PutObject"
+        Effect   = "Allow"
+        Resource = "arn:aws:s3:::vetri-devops-bucket/incident_data.csv"
       }
     ]
   })
