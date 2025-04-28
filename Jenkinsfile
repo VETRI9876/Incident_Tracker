@@ -2,8 +2,6 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
         AWS_REGION = 'eu-north-1'
     }
 
@@ -31,7 +29,7 @@ pipeline {
             steps {
                 script {
                     def ec2_ip = bat(
-                        script: "terraform output -raw instance_public_ip", 
+                        script: 'terraform output -raw instance_public_ip',
                         returnStdout: true
                     ).trim()
                     echo "Fetched EC2 Public IP: ${ec2_ip}"
@@ -51,15 +49,21 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
-                script {
-                    echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
-                    bat """
-                        wsl ansible-playbook -i '${env.EC2_PUBLIC_IP},' -u ubuntu --private-key ~/devops.pem deploy.yaml \
-                            -e aws_access_key_id=${AWS_ACCESS_KEY_ID} \
-                            -e aws_secret_access_key=${AWS_SECRET_ACCESS_KEY} \
-                            -e aws_region=${AWS_REGION} \
-                            -e ecr_image_name='409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest'
-                    """
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    script {
+                        echo "Running Ansible on IP: ${env.EC2_PUBLIC_IP}"
+
+                        bat """
+                            wsl bash -c "ansible-playbook -i '${env.EC2_PUBLIC_IP},' -u ubuntu --private-key ~/devops.pem deploy.yaml \\
+                            -e aws_access_key_id='${AWS_ACCESS_KEY_ID}' \\
+                            -e aws_secret_access_key='${AWS_SECRET_ACCESS_KEY}' \\
+                            -e aws_region='${AWS_REGION}' \\
+                            -e ecr_image_name='409784048198.dkr.ecr.eu-north-1.amazonaws.com/vetri:latest'"
+                        """
+                    }
                 }
             }
         }
