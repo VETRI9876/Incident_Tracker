@@ -63,7 +63,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 # IAM Role Policy Attachment
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerServiceforEC2Role"  # Updated policy ARN
+  policy_arn = "arn:aws:iam::aws:policy/AmazonECSTaskExecutionRolePolicy"  # Update if needed
 }
 
 # Load Balancer Configuration
@@ -71,8 +71,8 @@ resource "aws_lb" "streamlit_alb" {
   name               = "streamlit-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups   = [aws_security_group.allow_http.id]
-  subnets           = [data.aws_subnet.subnet_1.id, data.aws_subnet.subnet_2.id, data.aws_subnet.subnet_3.id]
+  security_groups    = [aws_security_group.allow_http.id]
+  subnets            = [data.aws_subnet.subnet_1.id, data.aws_subnet.subnet_2.id, data.aws_subnet.subnet_3.id]
   enable_deletion_protection = false
 }
 
@@ -99,16 +99,6 @@ resource "aws_lb_listener" "streamlit_listener" {
   protocol          = "HTTP"
 
   default_action {
-    type             = "fixed-response"
-    fixed_response {
-      status_code = 200
-      content_type = "text/plain"
-      message_body = "OK"
-    }
-  }
-
-  # Forward traffic to target group
-  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.streamlit_target_group.arn
   }
